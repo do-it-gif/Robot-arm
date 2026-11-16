@@ -1,5 +1,3 @@
-# Robot-arm
-A personal robot arm with 6 degree of freedom ment for learning and AI integrated studies.
 # 6-DOF robot arm
 
 A desktop six-axis arm (550 mm reach, 1 kg payload target) that I am designing and building joint by joint. Every joint gets a CAD model, printable STEP files and a MATLAB verification script that checks the design against its worst-case load.
@@ -42,21 +40,29 @@ Two 19-lobe printed discs phased 180 degrees, 20 steel ring pins (dia 5 x 20) on
 
 **Load case.** The axis is vertical, so gravity puts no torque on the joint. The worst case is the arm stretched out horizontally: tilt moment on the output bearing plus the torque to accelerate the arm (modelled as a 3 kg rod with a 1 kg payload at 0.55 m, 90 deg/s reached in 0.3 s).
 
-| Check | Result |
-|---|---|
-| Output torque needed | 3.5 Nm |
-| Motor torque needed / pull-out safety factor | 0.22 Nm / 1.8 |
-| Allowable continuous output torque | 5.8 Nm, limited by contact pressure on the printed disc |
-| Disc contact pressure at motor stall (11.2 Nm) | 62 MPa against 45 MPa allowable: **fails at stall** |
-| Output pin bending at stall (M5 thread root, cantilever) | 430 MPa, safety factor 1.5 against a required 2.0: **fails** |
-| 6001 eccentric bearing | L10 about 80,000 h at stall torque; static safety 5.0 |
-| 6812 output bearing under tilt moment | static safety about 12 |
-| First torsional natural frequency | 7.9 Hz |
-| Load-to-rotor inertia ratio | 189:1 against a target below 30: **fails** |
+| Check | Result | Verdict |
+|---|---|---|
+| Output torque needed | 3.47 Nm | |
+| Motor torque needed / pull-out safety factor | 0.218 Nm / 1.84 | ok |
+| Allowable continuous output torque | 5.84 Nm, limited by disc contact | ok, 1.7x the need |
+| Housing groove crush | 1.7 MPa, safety factor 14.6 | ok |
+| 6001 eccentric bearing | L10 about 81,000 h at stall torque; static safety 5.0 | ok |
+| 608 shaft-end bearings | static safety 12 | ok |
+| 6812 output bearing under 13.5 Nm tilt moment | static safety 11.8 | ok |
+| First torsional natural frequency | 7.9 Hz (limit 5 Hz) | ok |
+| Disc contact pressure at motor stall (11.2 Nm) | 62 MPa against 45 MPa allowable | **fail** |
+| Output pin bending at stall | 430 MPa, safety factor 1.49 against a required 2.0 | **fail** |
+| Load-to-rotor inertia ratio | 189:1 against a guideline of 30:1 | **fail** |
 
-**What that means.** The joint carries its operating duty with margin. It does not survive full motor stall torque, so motor current has to be limited. The inertia ratio means moves must be ramped slowly.
+### The three failed checks: cause and fix
 
-**Next changes.** Replace the M5 screws with dia 5 shoulder bolts (bending safety factor rises to about 2.9). Measure backlash. Replace the input values still based on estimates (arm mass, bearing support spacing, motor pull-out torque) with measured ones.
+| Failed check | Why it fails | Fix |
+|---|---|---|
+| Disc contact at stall | A steel pin on a printed PLA lobe is a narrow line contact. Full stall torque (11.2 Nm) is 3.2x what the joint needs, and the plastic surface is the weakest link. | Limit motor current so output torque stays below 5.8 Nm. That is still 1.7x the 3.47 Nm needed. Longer term: a tougher disc material. |
+| Output pin bending | The M5 screws bend at the thread root (4.0 mm core) as cantilevers 15 mm long. | Replace with dia 5 shoulder bolts: safety factor about 2.9. Supporting the pins at both ends would give about 3.6. |
+| Inertia ratio | The stretched arm has 0.605 kg m^2; through 20:1 that is still 189x the rotor inertia. This is a controllability guideline for open-loop steppers, not a strength limit. | Ramped acceleration (0.3 s ramp already assumed, pull-out margin 1.84), input shaping at the 7.9 Hz resonance, and encoder feedback on the joint. |
+
+Still open: backlash is not measured (10 arcmin assumed, which is 1.6 mm at the tip), and some inputs are estimates (arm mass, bearing support spacing, motor pull-out torque).
 
 ## J5 wrist joint
 
@@ -64,20 +70,29 @@ Compact version of the same architecture for a NEMA17: 20 ring pins on a 48 mm p
 
 **Load case.** Wrist pitch with the link horizontal: gravity torque acts on the joint axis (0.6 kg at 60 mm plus 1 kg payload at 120 mm).
 
-| Check | Result |
-|---|---|
-| Gravity torque / total output torque needed | 1.53 Nm / 1.67 Nm |
-| Motor pull-out safety factor | 4.3 |
-| Allowable output torque | **1.45 Nm**, limited by disc contact pressure: below the 1.67 Nm needed |
-| Payload rating that follows | 0.8 kg at 120 mm |
-| Disc contact pressure at stall | 120 MPa against 45 MPa allowable: **fails** |
-| 6702 eccentric bearing static safety at stall | 0.98 against a required 2.0: **fails** |
-| Housing wall behind ring pins | 0.5 mm against a 1.0 mm minimum: **fails** |
-| Bolt / insert clearance to shaft-end bearing seat | -2.5 mm (interference): **fails** |
-| Output pin bending | safety factor 5.8 |
-| First natural frequency | 90 Hz |
+| Check | Result | Verdict |
+|---|---|---|
+| Gravity torque / total output torque needed | 1.53 Nm / 1.67 Nm | |
+| Motor pull-out safety factor | 4.28 | ok |
+| Output pin bending at stall | 110 MPa, safety factor 5.8 | ok |
+| 6807 housing bearings | static safety 15.4 | ok |
+| First natural frequency | 90 Hz (limit 10 Hz) | ok |
+| Inertia ratio | 5.2:1 | ok |
+| Disc contact pressure at the 1 kg operating load | 48 MPa against 45 MPa allowable | **fail**, 7% over |
+| Disc contact pressure at stall (10.4 Nm) | 120 MPa against 45 MPa | **fail** |
+| Allowable output torque | 1.45 Nm against 1.67 Nm needed | **rated 0.8 kg, not 1 kg** |
+| 6702 eccentric bearing static safety at stall | 0.98 against a required 2.0 | **fail** |
+| Housing wall behind ring pins | 0.5 mm against a 1.0 mm minimum | **fail** |
+| Bolt / insert clearance to shaft-end bearing seat | -2.5 mm | **fail** |
 
-**What that means.** As drawn, the wrist joint is rated for 0.8 kg, not 1 kg, and has two packaging conflicts to resolve. Options under evaluation: smaller ring pins with a larger pin circle, a stiffer disc material, a larger eccentric bearing.
+### The failed checks: cause and fix
+
+| Failed check | Why it fails | Fix |
+|---|---|---|
+| Disc contact | The small 48 mm pin circle gives a tight lobe radius (effective contact radius about 1.1 mm), and the discs are only 4.75 mm thick. | Rated for 0.8 kg for now. About 15% more contact length (thicker discs with longer ring pins) brings the 1 kg operating case inside the limit. Motor current limited so stall torque is never reached. |
+| 6702 static safety at stall | At full stall the eccentric bearing sees 419 N against a derated static rating of 413 N. | Same current limit: at the operating load it sees 67 N, a static safety above 6. |
+| Housing wall | 54 mm housing over a 48 mm pin circle with dia 5 pins leaves 0.5 mm of printed wall. | Increase the housing diameter to 56 mm (1.5 mm wall), or use dia 4 ring pins (1.0 mm wall). |
+| Bolt / insert vs bearing seat | The 7 mm heat-set inserts on the 30 mm bolt circle overlap radially with the 28 mm seat of the 6001 shaft-end bearing. | Use a smaller shaft-end bearing (a 608 clears by 0.5 mm, a 6702 by 1.0 mm), or separate insert and bearing seat axially. |
 
 ## Assumptions and limits of the calculations
 
